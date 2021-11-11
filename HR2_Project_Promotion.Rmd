@@ -1,0 +1,83 @@
+---
+title: "HR2_promotion"
+output: html_document
+---
+
+
+
+```{r}
+
+library(tidyverse)
+#library(httr)
+#library(jsonlite)
+library(lubridate)
+library(readr)   
+
+```
+
+
+
+
+```{r setup, include=FALSE}
+
+rawdata <- "C:/Users/small/Documents/Mongomery_College/2021_fall/DATA_205/datasets"
+setwd(rawdata)
+knitr::opts_knit$set(root.dir = rawdata)
+getwd()
+  
+```
+
+
+```{r}
+
+
+promotion <- read.csv("Promotion_Report.csv", header = TRUE, fileEncoding="UTF-8-BOM")
+
+
+```
+
+```{r}
+str(promotion)
+```
+
+
+```{r}
+promotion1 <- promotion %>% 
+  mutate_at(c("Female.Percentage", "Male.Percentage", "Grand.Total"), as.numeric)
+```
+
+
+
+```{r}
+library(funModeling) 
+library(Hmisc)
+library(skimr)
+basic_eda <- function(data)
+{
+  glimpse(data)
+  skim(data)
+  df_status(data)
+  freq(data)
+  profiling_num(data)
+  plot_num(data)
+  describe(data)
+}
+basic_eda(promotion)
+```
+
+
+
+
+
+
+```{r}
+
+library(DataExplorer)
+DataExplorer::create_report(promotion)
+
+```
+
+
+
+
+

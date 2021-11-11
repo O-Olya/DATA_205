@@ -1,0 +1,97 @@
+---
+title: "HR2_personnel"
+output: html_document
+---
+
+
+
+```{r}
+
+library(tidyverse)
+#library(httr)
+#library(jsonlite)
+library(lubridate)
+library(readr)   
+library(dplyr)
+```
+
+
+
+
+```{r setup, include=FALSE}
+
+rawdata <- "C:/Users/small/Documents/Mongomery_College/2021_fall/DATA_205/datasets"
+setwd(rawdata)
+knitr::opts_knit$set(root.dir = rawdata)
+getwd()
+  
+```
+
+
+```{r}
+
+personnel <- read.csv("PMR_MLS__Management__Report.csv", header = TRUE, fileEncoding="UTF-8-BOM")
+
+```
+
+```{r}
+str(personnel)
+
+```
+
+```{r}
+head(personnel)
+```
+
+
+
+```{r}
+personnel1 <- personnel %>% 
+  mutate_at(c("Salary.Range"), as.numeric)
+```
+
+
+
+
+```{r}
+personnel$Salary.Range_new <- gsub(",", "", personnel$Salary.Range)
+personnel$Salary.Range_new <- as.numeric(personnel$Salary.Range_new)
+personnel$Salary.Range_new
+```
+
+
+
+
+```{r}
+library(funModeling) 
+library(Hmisc)
+library(skimr)
+basic_eda <- function(data)
+{
+  glimpse(data)
+  skim(data)
+  df_status(data)
+  freq(data)
+  profiling_num(data)
+  plot_num(data)
+  describe(data)
+}
+basic_eda(personnel)
+```
+
+
+
+
+
+
+```{r}
+
+library(DataExplorer)
+DataExplorer::create_report(personnel)
+
+```
+
+
+
+
+

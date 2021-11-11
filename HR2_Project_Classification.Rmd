@@ -1,0 +1,86 @@
+---
+title: "HR2_classification"
+output: html_document
+---
+
+
+
+```{r}
+
+library(tidyverse)
+#library(httr)
+#library(jsonlite)
+library(lubridate)
+library(readr)   
+
+```
+
+
+
+
+```{r setup, include=FALSE}
+
+rawdata <- "C:/Users/small/Documents/Mongomery_College/2021_fall/DATA_205/datasets"
+setwd(rawdata)
+knitr::opts_knit$set(root.dir = rawdata)
+getwd()
+  
+```
+
+
+```{r}
+
+
+classification <- read.csv("Average_Salary_by_Job_Classification.csv", header = TRUE, fileEncoding="UTF-8-BOM")
+
+
+
+```
+
+```{r}
+str(classification)
+```
+
+
+
+```{r}
+classification1 <- classification %>% 
+  mutate_at(c("Average.of.Base.Salary"), as.numeric)
+```
+
+
+
+
+
+
+```{r}
+library(funModeling) 
+library(Hmisc)
+library(skimr)
+basic_eda <- function(data)
+{
+  glimpse(data)
+  skim(data)
+  df_status(data)
+  freq(data)
+  profiling_num(data)
+  plot_num(data)
+  describe(data)
+}
+basic_eda(classification)
+```
+
+
+
+
+```{r}
+
+library(DataExplorer)
+DataExplorer::create_report(classification)
+
+```
+
+
+
+
+
