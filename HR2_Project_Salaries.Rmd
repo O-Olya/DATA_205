@@ -12,6 +12,11 @@ library(tidyverse)
 #library(jsonlite)
 library(lubridate)
 library(readr)   
+library(dplyr)
+library(psych)
+library(dlookr)
+library(Hmisc)
+library(corrplot)
 
 ```
 
@@ -35,10 +40,430 @@ salaries <- read.csv("Employee_Salaries_-_2020.csv", header = TRUE, fileEncoding
 
 ```
 
+
+
 ```{r}
 str(salaries)
 ```
 
+```{r}
+library(janitor)
+
+salaries1 <- salaries %>%
+  clean_names()
+salaries1
+```
+
+
+
+```{r}
+salaries1 %>%
+group_by(gender) %>% 
+describe(base_salary, x2020_overtime_pay, x2020_longevity_pay)
+```
+
+
+
+```{r}
+salaries1 %>%
+group_by(department_name) %>% 
+describe(base_salary, x2020_overtime_pay, x2020_longevity_pay)
+
+```
+
+
+
+```{r}
+normality(salaries1)
+```
+
+```{r}
+salaries1 %>%
+  mutate(log_base_salary = log(base_salary)) %>%
+  group_by(department_name) %>%
+  normality(log_base_salary)
+ # filter(p_value > 0.01)
+
+```
+
+```{r}
+salaries1 %>%
+  mutate(log_base_salary = log(base_salary)) %>%
+  group_by(gender) %>%
+  normality(log_base_salary)
+
+```
+
+
+
+```{r}
+library(dlookr)
+plot_normality(salaries1)
+```
+
+
+
+```{r}
+correlate(salaries1)
+```
+
+
+```{r}
+plot_correlate(salaries1)
+```
+
+
+```{r}
+salaries1$gender <- as.factor(salaries1$gender) 
+
+class(salaries1$gender)
+```
+
+
+
+```{r}
+target_base_salary<- target_by(salaries1, base_salary)
+
+cat_categor <- relate(target_base_salary, gender)
+cat_categor
+
+summary(cat_categor)
+```
+
+```{r}
+plot(cat_categor)
+```
+
+
+
+Suppose that 50% of employees are women
+
+This is going to be a 1-proportion test and we will test at the 95% confidence level
+
+Ho:p=0.50
+Ha:p≠0.50
+
+
+```{r}
+# x is the number of successes
+x = salaries1 %>% 
+  filter(gender == "F") %>%
+  nrow()
+
+# n is the total number of Airbnbs
+n = nrow(salaries1)
+
+prop.test(x, n, p = 0.50, alternative = "two.sided", 
+          conf.level = 0.95)
+```
+P-value: 0.00000000000000022 < 0.05 = α.
+
+Conclusion: Reject Ho.
+
+
+
+```{r}
+plot1 <- salaries1 %>%
+  ggplot(aes(gender, base_salary, fill = gender)) + 
+  ggtitle("Salaries by Gender") +
+  xlab("Gender") +
+  ylab("Frequency") +
+  geom_boxplot() +
+  scale_fill_discrete(name = "Gender", labels = c("Female", "Male"))
+plot1
+
+```
+
+It appears average of salaries for two gender is different. Is this actually true or could it have just happened by chance for our sample of data?
+
+
+
+This is going to be an ANOVA test and we will use α=0.05.
+Ho:μbx=μbr=μm=μq=μsi (In other words, there is no relationship between salary and gender.)
+Ha: Not all μ are equal. (There is a relationship between salary and gender)
+
+
+```{r}
+results <- aov(salaries1$base_salary ~ salaries1$gender)
+
+summary(results)
+```
+P-value: 0.0000000282 < 0.05=α.
+
+Conclusion: Reject Ho.
+
+It appears that women has a lower salary than men. Is this true? Or did this just happen by chance with our sample?
+
+This is going to be a two sample t-test. We will test at the 95% confidence level.
+
+Ho:μm=μb
+Ha:μb<μm
+
+```{r}
+
+women <- salaries1 %>%
+  filter(gender == "F")
+
+men <- salaries1 %>%
+  filter(gender == "M")
+
+t.test(women$base_salary, men$base_salary, alternative="less",
+       conf.level = 0.95)
+
+```
+
+P-value: 0.00000001857 < 0.05 = α.
+
+Conclusion: Reject Ho.
+
+
+What about the distribution salary in the Departments with biggest and smallest salaries?
+
+
+```{r}
+salaries_big_sal <- salaries1 %>%
+  select(base_salary, department_name) %>%
+  group_by(department_name) %>%
+#arrange(-base_salary) 
+ arrange(base_salary) 
+salaries_big_sal
+
+```
+
+
+```{r}
+
+women1 <- salaries1 %>%
+  filter(gender == "F" & department_name == "Offices of the County Executive")
+
+men1 <- salaries1 %>%
+  filter(gender == "M" & department_name == "Offices of the County Executive")
+
+t.test(women1$base_salary, men1$base_salary, alternative="less",
+       conf.level = 0.95)
+
+
+```
+
+P-value: 0.001843 < 0.05 = α.
+
+Conclusion: Reject Ho.
+
+
+```{r}
+
+women2 <- salaries1 %>%
+  filter(gender == "F" & department_name == "Department of Police")
+
+men2 <- salaries1 %>%
+  filter(gender == "M" & department_name == "Department of Police")
+
+t.test(women2$base_salary, men2$base_salary, alternative="less",
+       conf.level = 0.95)
+
+```
+
+P-value: 0.00000000000000022 < 0.05 = α.
+
+Conclusion: Reject Ho.
+
+
+```{r}
+women3 <- salaries1 %>%
+  filter(gender == "F" & department_name == "Department of Health and Human Services")
+
+men3 <- salaries1 %>%
+  filter(gender == "M" & department_name == "Department of Health and Human Services")
+
+t.test(women3$base_salary, men3$base_salary, alternative="less",
+       conf.level = 0.95)
+```
+
+P-value: 0.0000004074 < 0.05 = α.
+
+Conclusion: Reject Ho.
+
+
+```{r}
+women4 <- salaries1 %>%
+  filter(gender == "F" & department_name == "Office of Agriculture")
+
+men4 <- salaries1 %>%
+  filter(gender == "M" & department_name == "Office of Agriculture")
+
+t.test(women4$base_salary, men4$base_salary, alternative="less",
+       conf.level = 0.95)
+```
+
+
+P-value: 0.1891 > 0.05 = α.
+
+Conclusion: Fail to reject Ho.
+
+
+```{r}
+women5 <- salaries1 %>%
+  filter(gender == "F" & department_name == "Department of Public Libraries")
+
+men5 <- salaries1 %>%
+  filter(gender == "M" & department_name == "Department of Public Libraries")
+
+t.test(women5$base_salary, men5$base_salary, alternative="less",
+       conf.level = 0.95)
+```
+
+P-value: 0.02504 < 0.05 = α.
+
+Conclusion: Reject Ho.
+
+
+```{r}
+women6 <- salaries1 %>%
+  filter(gender == "F" & department_name == "Department of Permitting Services")
+
+men6 <- salaries1 %>%
+  filter(gender == "M" & department_name == "Department of Permitting Services")
+
+t.test(women6$base_salary, men6$base_salary, alternative="less",
+       conf.level = 0.95)
+```
+
+P-value: 0.09165 > 0.05 = α.
+
+Conclusion: Fail to reject Ho.
+
+
+
+
+
+
+
+```{r}
+eda_web_report(salaries1)
+```
+
+
+
+
+```{r fig.width = 6, fig.height = 4}
+plot <- ggplot(salaries1, aes(base_salary, department_name, colour = factor(gender))) +
+  geom_jitter (alpha = 0.3, size = 1.1)+ 
+  scale_colour_manual(values=c('#FF0000', '#4682B4'), # set colors for plot lines
+                       name="AA", 
+                       breaks=c("C", "B"),
+                       labels=c("C", "B"))+ # set legend 
+  facet_wrap(.~ gender) +
+  geom_smooth(method='lm',formula=y~x, size = 0.3, color = "black")+ # add linear regression
+  ggtitle("AA")+
+  theme_bw()
+plot
+#ggplotly(p2) # may be applied for more interactivity on the graphs
+```
+
+
+
+
+```{r}
+summary(salaries1$base_salary)
+```
+
+```{r}
+library(plyr)
+salaries2 <- ddply(salaries1, "gender", summarise, base_salary.mean=mean(base_salary))
+salaries2
+```
+
+
+
+
+```{r}
+salaries_hist1 <- salaries1 %>%
+  ggplot(aes(x = base_salary, fill = gender), options(scipen = 999)) +
+  geom_histogram(position="dodge", alpha = 0.5, color = "white")+
+ # scale_fill_discrete(name = "Gender", labels = c("Female", "Male"))+
+  
+  geom_vline(data=salaries2, aes(xintercept=base_salary.mean,  colour = gender),
+               linetype="dashed", size=1)+
+  
+  labs(x = "Salary (in dollars)", y = "Frequency", 
+       title = "MoCo Employees Salary Distribution in 2020")+
+  theme_minimal()
+
+salaries_hist1
+```
+
+```{r fig.width = 6, fig.height = 6}
+salaries_box1 <- salaries1 %>%
+  ggplot(aes(base_salary, department_name, fill = gender), options(scipen = 999)) + 
+ 
+  ggtitle("Boxplot of MoCo Employees Salary by Gender in 2020") +
+  xlab("Salary (in dollars)") +
+  ylab("Departments") +
+  geom_boxplot() +
+  
+  scale_fill_discrete(name = "Gender", labels = c("Female", "Male"))+
+theme_minimal()
+#coord_flip()
+salaries_box1
+```
+
+
+```{r fig.width = 6, fig.height = 6}
+
+ggplot(salaries1, aes(department_name, base_salary, fill = gender), options(scipen = 999)) + 
+  geom_bar(stat = "identity") + 
+  
+  labs(title = "Distribution of MoCo Employees Salary by Departments in 2020",
+       x = "Deparmnents", 
+       y = "Salary (in dollars)", 
+       fill = "Gender") +
+  coord_flip() + #flip the plot 90 degrees
+  scale_y_continuous(breaks = seq(0, 45, 5)) + #scale y-axis
+  theme_minimal() +
+  theme(legend.position = "bottom") + #set position of the legend
+  scale_fill_brewer(palette = "Set1") #set color palette from the RColorBrewer
+```
+
+
+
+```{r}
+library(treemap)
+treemap(salaries1, index="department_name", vSize="base_salary", #set size
+        vColor="base_salary", #set color
+        type="value",
+        title="Treemap of Salary by Departments", palette="Set2")
+        
+        
+```
+
+
+
+```{r fig.width = 6, fig.height = 6}
+
+salaries_box2 <- salaries1 %>%
+  ggplot(aes(base_salary, department_name, fill = gender), options(scipen = 999)) + 
+ 
+  ggtitle("Boxplot of MoCo Employees Salary by Gender in 2020") +
+  xlab("Salary (in dollars)") +
+  ylab("Departments") +
+  geom_boxplot() +
+  
+  scale_fill_discrete(name = "Gender", labels = c("Female", "Male"))+
+theme_minimal()
+#coord_flip()
+salaries_box1
+
+
+
+```
+
+
+```{r}
+
+#library(DataExplorer)
+#DataExplorer::create_report(salaries)
+
+```
 
 
 ```{r}
@@ -55,91 +480,8 @@ basic_eda <- function(data)
   plot_num(data)
   describe(data)
 }
-basic_eda(salaries)
+basic_eda(salaries1)
 ```
-
-```{r}
-summary(salaries$Base.Salary)
-```
-
-```{r}
-library(plyr)
-salaries1 <- ddply(salaries, "Gender", summarise, Base.Salary.mean=mean(Base.Salary))
-salaries1
-```
-
-
-
-
-```{r}
-salaries_hist1 <- salaries %>%
-  ggplot(aes(x = Base.Salary, fill = Gender)) +
-  geom_histogram(position="dodge", alpha = 0.5, color = "white")+
- # scale_fill_discrete(name = "Gender", labels = c("Female", "Male"))+
-  
-  geom_vline(data=salaries1, aes(xintercept=Base.Salary.mean,  colour = Gender),
-               linetype="dashed", size=1)+
-  
-  labs(x = "Salary (in dollars)", y = "Frequency", 
-       title = "MoCo Employees Salary Distribution in 2020")+
-  theme_minimal()
-
-salaries_hist1
-```
-
-```{r fig.width = 6, fig.height = 6}
-salaries_box1 <- salaries %>%
-  ggplot(aes(Base.Salary, Department.Name, fill = Gender)) + 
- 
-  ggtitle("Boxplot of MoCo Employees Salary by Gender in 2020") +
-  xlab("Salary (in dollars)") +
-  ylab("Departments") +
-  geom_boxplot() +
-  
-  scale_fill_discrete(name = "Gender", labels = c("Female", "Male"))+
-theme_minimal()
-#coord_flip()
-salaries_box1
-```
-
-
-```{r fig.width = 6, fig.height = 6}
-ggplot(salaries, aes(x = Department.Name, y = Base.Salary, fill = Gender)) + 
-  geom_bar(stat = "identity") + 
-  
-  labs(title = "Distribution of MoCo Employees Salary by Departments in 2020",
-       x = "Deparmnents", 
-       y = "Salary (in dollars)", 
-       fill = "Gender") +
-  coord_flip() + #flip the plot 90 degrees
-  scale_y_continuous(breaks = seq(0, 45, 5)) + #scale y-axis
-  theme_minimal() +
-  theme(legend.position = "bottom")  #set position of the legend
-  #scale_fill_brewer(palette = "Dark2") #set color palette from the RColorBrewer
-```
-
-
-
-```{r}
-library(treemap)
-treemap(salaries, index="Department.Name", vSize="Base.Salary", #set size
-        vColor="Base.Salary", #set color
-        type="value",
-        title="Treemap of Salary by Departments", palette="Spectral")
-        
-        
-```
-
-
-
-
-```{r}
-
-#library(DataExplorer)
-#DataExplorer::create_report(salaries)
-
-```
-
 
 
 

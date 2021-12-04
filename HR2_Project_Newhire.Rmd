@@ -9,7 +9,7 @@ output: html_document
 
 library(tidyverse)
 #library(httr)
-#library(jsonlite)
+#library(jsonlite) 
 library(lubridate)
 library(readr)   
 
@@ -35,20 +35,109 @@ newhire <- read.csv("New_Hire_Report.csv", header = TRUE, fileEncoding="UTF-8-BO
 
 ```
 
+
 ```{r}
 str(newhire)
 ```
 
+```{r}
+library(janitor)
+
+newhire1 <- newhire %>%
+  clean_names()
+newhire1
+```
+
+```{r}
+
+newhire1$female_percentage <- as.numeric(gsub("\\%", "", newhire1$female_percentage))
+newhire1$male_percentage <- as.numeric(gsub("\\%", "", newhire1$male_percentage))
+newhire1$grand_total <- as.numeric(gsub("\\%", "", newhire1$grand_total))
+
+newhire1$race_etnicity[newhire1$race_etnicity == "White (Not Hispanic or Latino)"] <- "White"
+newhire1$race_etnicity[newhire1$race_etnicity == "Asian (Not Hispanic or Latino)"] <- "Asian"
+newhire1$race_etnicity[newhire1$race_etnicity == "Black or African American (Not Hispanic or Latino)"] <- "Black or African American"
+
+
+newhire1
+```
 
 
 
 ```{r}
-
-newhire1 <- newhire %>% 
-  mutate_at(c("Female.Percentage", "Male.Percentage", "Grand.Total"), as.numeric)
-
+newhire2 <- newhire1 %>%
+mutate(female_per = (female_percentage * 100) / sum(female_percentage)) %>% 
+  mutate(male_per = (male_percentage * 100) / sum(male_percentage)) %>%
+  mutate_if(is.numeric, round, digits=1)
+newhire2
 ```
 
+
+
+```{r}
+newhire_female <- newhire2
+  
+ newhire_female <- data.frame(
+  group = c("White", "Asian", "Black or African American", "Undisclosed", "Other", "Hispanic or Latino"),
+  value = c(29.8, 8.5, 31.9, 12.8, 4.3, 12.7)
+  )
+newhire_female
+```
+
+
+
+```{r}
+pie_female <- ggplot(newhire_female, aes(x= "", y = value, fill = group)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  scale_fill_brewer(palette="Set1") +
+  theme_minimal() +
+  theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  plot.title=element_text(size=14, face="bold")
+  )
+
+
+pie_female
+```
+
+```{r}
+library(scales)
+pie_female +
+  theme(axis.text.x=element_blank()) +
+  geom_text(aes(y = value/6 + c(0, cumsum(value)[-length(value)]), 
+            label = percent(value/100)), size = 3)
+```
+
+```{r}
+bp <- ggplot(newhire_female, aes(x="", y=value, fill=group))+
+geom_bar(width = 1, stat = "identity")
+bp
+```
+
+```{r}
+
+pie7 <- bp + coord_polar("y", start=0)
+pie7
+```
+
+```{r}
+pie7 + scale_fill_brewer(palette="Set1")+
+  theme_minimal()
+```
+
+
+
+```{r}
+# library
+library(ggplot2)
+library(dplyr)
+library(hrbrthemes)
+```
 
 
 
@@ -66,7 +155,7 @@ basic_eda <- function(data)
   plot_num(data)
   describe(data)
 }
-basic_eda(newhire)
+basic_eda(newhire1)
 ```
 
 
@@ -78,6 +167,23 @@ DataExplorer::create_report(newhire)
 ```
 
 
+```{r}
+# Build dataset with different distributions
+#newhire1 <- data.frame(
+#  type = c( rep("female_percentage", 10000), rep("male_percentage", 10000) ),
+#  value = c( rnorm(10000), rnorm(10000, mean=6) )
+)
+
+
+# Represent it
+#p8 <- newhire1 %>%
+#  ggplot( aes(x=value, fill=type)) +
+ #   geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity') +
+ #   scale_fill_manual(values=c("#69b3a2", "#404080")) +
+ #   theme_ipsum() +
+ #   labs(fill="")
+#p8
+```
 
 
 
