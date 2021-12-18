@@ -1,0 +1,126 @@
+---
+title: "HR2_promotion"
+output: html_document
+---
+
+
+
+```{r}
+
+library(tidyverse)
+#library(httr)
+#library(jsonlite)
+library(lubridate)
+library(readr)   
+
+```
+
+
+
+
+```{r setup, include=FALSE}
+
+rawdata <- "C:/Users/small/Documents/Mongomery_College/2021_fall/DATA_205/datasets"
+setwd(rawdata)
+knitr::opts_knit$set(root.dir = rawdata)
+getwd()
+  
+```
+
+
+```{r}
+
+
+promotion <- read.csv("Promotion_Report.csv", header = TRUE, fileEncoding="UTF-8-BOM")
+
+
+```
+
+```{r}
+str(promotion)
+```
+
+
+```{r}
+library(janitor)
+
+promotion1 <- promotion %>%
+  clean_names()
+promotion1
+```
+
+
+
+```{r}
+promotion1$female_percentage <- as.numeric(gsub("\\%", "", promotion1$female_percentage))
+promotion1$male_percentage <- as.numeric(gsub("\\%", "", promotion1$male_percentage))
+promotion1$grand_total <- as.numeric(gsub("\\%", "", promotion1$grand_total))
+
+promotion1$race_etnicity[promotion1$race_etnicity == "White (Not Hispanic or Latino)"] <- "White"
+promotion1$race_etnicity[promotion1$race_etnicity == "Asian (Not Hispanic or Latino)"] <- "Asian"
+promotion1$race_etnicity[promotion1$race_etnicity == "Black or African American (Not Hispanic or Latino)"] <- "Black or African American"
+
+
+promotion1
+```
+
+
+```{r}
+promotion2 <- promotion1 %>%
+mutate(female_per = (female_percentage * 100) / sum(female_percentage)) %>% 
+  mutate(male_per = (male_percentage * 100) / sum(male_percentage)) %>%
+  mutate_if(is.numeric, round, digits= 1)
+promotion2
+```
+
+```{r}
+promotion_female <- promotion2
+  
+promotion_female <- data.frame(
+  group = c("White", "Asian", "Black or African American", "Undisclosed", "Other", "Hispanic or Latino"),
+  value = c(38.1, 16.7, 7.1, 9.5, 11.9, 16.7)
+  )
+promotion_female
+```
+
+
+```{r}
+library(RColorBrewer)
+
+color <- brewer.pal(length(count), "Set1") 
+```
+
+```{r}
+pie(promotion_female$value,
+
+labels=as.character(paste(promotion_female$group, paste0(promotion_female$value, "%"))),
+
+main="Female Promotions",
+
+clockwise=TRUE, col = color) 
+```
+
+```{r}
+promotion_male <- promotion2
+  
+promotion_male <- data.frame(
+  group = c("White", "Asian", "Black or African American", "Undisclosed", "Other", "Hispanic or Latino"),
+  value = c(61, 6.8, 1.7, 6.8, 3.4, 20.3)
+  )
+promotion_female
+```
+
+
+
+```{r}
+pie(promotion_male$value,
+
+labels=as.character(paste(promotion_male$group, paste0(promotion_male$value, "%"))),
+
+main="Male Promotions",
+
+clockwise=TRUE, col = color) 
+```
+
+
+

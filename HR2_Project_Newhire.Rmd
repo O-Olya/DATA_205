@@ -68,7 +68,7 @@ newhire1
 newhire2 <- newhire1 %>%
 mutate(female_per = (female_percentage * 100) / sum(female_percentage)) %>% 
   mutate(male_per = (male_percentage * 100) / sum(male_percentage)) %>%
-  mutate_if(is.numeric, round, digits=1)
+  mutate_if(is.numeric, round, digits= 1)
 newhire2
 ```
 
@@ -105,85 +105,53 @@ pie_female <- ggplot(newhire_female, aes(x= "", y = value, fill = group)) +
 pie_female
 ```
 
-```{r}
-library(scales)
-pie_female +
-  theme(axis.text.x=element_blank()) +
-  geom_text(aes(y = value/6 + c(0, cumsum(value)[-length(value)]), 
-            label = percent(value/100)), size = 3)
-```
 
-```{r}
-bp <- ggplot(newhire_female, aes(x="", y=value, fill=group))+
-geom_bar(width = 1, stat = "identity")
-bp
-```
 
 ```{r}
 
-pie7 <- bp + coord_polar("y", start=0)
-pie7
-```
+library(RColorBrewer)
 
-```{r}
-pie7 + scale_fill_brewer(palette="Set1")+
-  theme_minimal()
+color <- brewer.pal(length(count), "Set1") 
 ```
 
 
 
+
 ```{r}
-# library
-library(ggplot2)
-library(dplyr)
-library(hrbrthemes)
+
+
+pie(newhire_female$value,
+
+labels=as.character(paste(newhire_female$group, paste0(newhire_female$value, "%"))),
+
+main="Female New Hires",
+
+clockwise=TRUE, col = color) 
+
+
 ```
 
 
 
-```{r}
-library(funModeling) 
-library(Hmisc)
-library(skimr)
-basic_eda <- function(data)
-{
-  glimpse(data)
-  skim(data)
-  df_status(data)
-  freq(data)
-  profiling_num(data)
-  plot_num(data)
-  describe(data)
-}
-basic_eda(newhire1)
-```
-
 
 ```{r}
-
-library(DataExplorer)
-DataExplorer::create_report(newhire)
+newhire_male <- newhire2
+  
+ newhire_male <- data.frame(
+  group = c("White", "Asian", "Black or African American", "Undisclosed", "Other", "Hispanic or Latino"),
+  value = c(28.3, 5.7, 35.8, 11.3, 3.8, 15.1)
+  )
+newhire_male
 
 ```
 
 
 ```{r}
-# Build dataset with different distributions
-#newhire1 <- data.frame(
-#  type = c( rep("female_percentage", 10000), rep("male_percentage", 10000) ),
-#  value = c( rnorm(10000), rnorm(10000, mean=6) )
-)
+pie(newhire_male$value,
 
+labels=as.character(paste(newhire_male$group, paste0(newhire_male$value, "%"))),
 
-# Represent it
-#p8 <- newhire1 %>%
-#  ggplot( aes(x=value, fill=type)) +
- #   geom_histogram( color="#e9ecef", alpha=0.6, position = 'identity') +
- #   scale_fill_manual(values=c("#69b3a2", "#404080")) +
- #   theme_ipsum() +
- #   labs(fill="")
-#p8
+main="Male New Hires",
+
+clockwise=TRUE, col = color)
 ```
-
-
-

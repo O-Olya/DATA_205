@@ -15,8 +15,8 @@ library(tidyverse)
 library(lubridate)
 library(readr)   
 library(dplyr)
-library(psych)
-library(dlookr)
+#library(psych)
+#library(dlookr)
 library(Hmisc)
 library(corrplot)
 ```
@@ -53,6 +53,9 @@ personnel1
 ```
 
 
+
+
+
 ```{r}
 personnel1$gender <- as.factor(personnel1$gender) 
 personnel1$length_of_service <- as.numeric(personnel1$length_of_service) 
@@ -64,8 +67,13 @@ class(personnel1$age)
 
 ```
 
+```{r}
+str(personnel1)
+
+```
 
 ```{r}
+library(dlookr)
 personnel1 %>%
 group_by(gender) %>% 
 describe(length_of_service, age) 
@@ -93,11 +101,33 @@ plot_normality(length_of_service, age)
 ```
 
 
+
+
+
 ```{r}
-personnel1$salary_range <- as.factor(personnel1$salary_range) 
+salary = c("80-89K", "90-99K", "100-109K", "110-119K", "120-129K", "130-139K" , "140-149K" , ">=150K")
+
+personnel1$salary_range <- factor(personnel1$salary_range, levels=salary, ordered = TRUE)
+
+personnel1$salary_range
+
+
+#personnel1$salary_range <- as.factor(personnel1$salary_range) 
 
 class(personnel1$salary_range)
 ```
+
+
+```{r}
+table(personnel1$salary_range)
+```
+
+
+```{r}
+type_counts <- table(personnel1$salary_range)
+type_counts / sum(type_counts)
+```
+
 
 ```{r}
 
@@ -107,15 +137,13 @@ target_salary <- target_by(personnel1, salary_range)
 
 
 ```{r}
-salary_gender <- relate(target_salary, gender)
+salary_gender <- relate(target_salary, generation)
 salary_gender
 summary(salary_gender)
 
 ```
 
-```{r}
-plot(salary_gender)
-```
+
 
 ```{r}
 salary_age <- relate(target_salary, age)
@@ -135,10 +163,9 @@ summary(salary_generation)
 
 ```
 
-```{r}
-#plot(salary_generation)
+According to these results, generation does contribute to salary range (p-value < 0.05%)
 
-```
+
 
 ```{r}
 personnel1$ethnic_origin[personnel1$ethnic_origin == "White (Not Hispanic or Latino)"] <- "White"
@@ -158,9 +185,10 @@ salary_ethnic_origin
 summary(salary_ethnic_origin)
 ```
 
-```{r}
-#plot(salary_ethnic_origin)
-```
+According to these results, ethnicity does not contribute to salary range (p-value > 0.05%)
+
+
+
 
 ```{r}
 salary_length_of_service <- relate(target_salary, length_of_service)
@@ -175,10 +203,13 @@ plot(salary_length_of_service)
 ```{r}
 # Are salary and gender related?
 # Null Hypothesis: salary and gender are independent
-sal_gender <- table(personnel1$salary_range, personnel1$gender)
+
+sal_gender <- table(personnel1$salary_range, personnel1$ethnic_origin)
 sal_gender
 chisq.test(sal_gender)
 ```
+
+
 
 
 ```{r}
@@ -210,6 +241,31 @@ plot1 <- personnel1 %>%
   ggplot(aes(x = salary_range, fill = ethnic_origin)) +
   geom_histogram(stat="count", binwidth = 5, color = "white")+
   scale_fill_discrete(name = "Ethnicity", labels = c("American Indian or Alaska Native", "Asian","Black or African American", "Hispanic or Latino", "Two or More Races", "Unreported", "White")) +
+  labs(x = "Salary (in dollars)", y = "Frequency", 
+       title = "MoCo Employees Salary Distribution by Ethnicity")+
+  theme_minimal() +
+  scale_fill_brewer(palette="Set1")
+plot1
+```
+
+
+```{r}
+personnel1$generation[personnel1$generation == "Millennial Generation"] <- "Millennial"
+personnel1$generation[personnel1$generation == "Traditionalist/Silent Generation"] <- "Silent"
+
+
+```
+
+
+
+```{r}
+plot1 <- personnel1 %>%
+  ggplot(aes(x = salary_range, fill = grade)) +
+  geom_histogram(stat="count", binwidth = 5, color = "white")+
+  scale_fill_discrete(name = "Ethnicity", labels = c("M1", "M2", "M3")) +
+  labs(x = "Salary (in dollars)", y = "Frequency", 
+       title = "MoCo Employees Salary Distribution by Grade")+
+  theme_minimal() +
   scale_fill_brewer(palette="Set1")
 plot1
 ```
@@ -220,19 +276,29 @@ plot1
 ggplot(data = personnel1) +
   geom_bar(mapping = aes(x = salary_range,
                        fill = gender)) +
+  labs(x = "Salary (in dollars)",
+       title = "MoCo Employees Salary Distribution by Gender")+
+  theme_minimal() +
   scale_fill_brewer(palette="Set1")
+  
 ```
 
-
+{r fig.width = 7, fig.height = 4}
 
 
 ```{r}
 table_gender_salary <- personnel1 %>%
-  dplyr::count(gender, salary_range)
+  dplyr::count(grade, salary_range)
 
 ggplot(data = table_gender_salary) +
-  geom_tile(mapping = aes(x = gender, 
-                          y = salary_range, fill = n))
+  geom_tile(mapping = aes(x = grade, 
+                          y = salary_range, fill = n)) +
+  scale_fill_gradientn(colors = brewer.pal(5, "RdYlGn")) +
+labs(x = "Grade", y = "Salary (in dollars)", 
+       title = "MoCo Employees Salary Distribution by Grade") +
+  theme_minimal()
+ # facet_grid(.~ grade)
+ 
 ```
 
 
@@ -245,11 +311,11 @@ Ha: gender and salary range are dependent.
 
 
 ```{r}
-gender_salary <- table(personnel1$salary_range, 
-                            personnel1$gender)
+gender_salary <- table(personnel1$grade, 
+                            personnel1$grade)
 
-result3 <- chisq.test(gender_salary)
-result3
+result5 <- chisq.test(gender_salary)
+result5
 ```
 
 P-value: 0.4017 > 0.05 = α.
@@ -271,98 +337,5 @@ corrplot(result3$residuals, is.corr = FALSE)
 
 
 
-
-
-
-```{r}
-plot2 <- personnel1 %>%
-  ggplot(aes(ethnic_origin, salary_range, fill = salary_range)) + 
-  ggtitle("Temperatures") +
-  xlab("Months") +
-  ylab("Frequency") +
-  geom_boxplot() +
-  scale_fill_discrete(name = "Month", labels = c("American Indian or Alaska Native", "Asian","Black or African American", "Hispanic or Latino", "Two or More Races", "Unreported", "White"))
-plot2
-
-```
-
-
-
-
-
-
-```{r}
-library(funModeling) 
-library(Hmisc)
-library(skimr)
-basic_eda <- function(data)
-{
-  glimpse(data)
-  skim(data)
-  df_status(data)
-  freq(data)
-  profiling_num(data)
-  plot_num(data)
-  describe(data)
-}
-basic_eda(personnel1)
-```
-
-
-
-```{r}
-
-library(DataExplorer)
-DataExplorer::create_report(personnel)
-
-```
-
-
-```{r}
-#i <- c(2, 5, 9) 
-
-#personnel1[ , i] <- apply(personnel1[ , i], 2,
-#function(x) as.numeric(as.character(x)))
-```
-
-
-```{r}
-# Recreating a data frame with a factor like yours
-#personnel1 <- data.frame(salary_range = cut(runif(100), 0:10/10))
-#levels(personnel1$salary_range) <- sub("\\((.*),(.*)]", "\\1-\\2", levels(personnel1$salary_range))
-
-# Calculating range means
-#sapply(strsplit(as.character(personnel1$salary_range), "-"),
-    #   function(x) mean(as.numeric(x)))
-```
-
-
-
-
-```{r}
-#sapply(personnel1, class)
-#personnel1$salary_range
-```
-
-
-```{r}
-#personnel1$salary_range <- as.numeric(gsub("-.*","",personnel1$salary_range))
-#class(personnel1$salary_range)
-#personnel1$salary_range
-```
-
-
-```{r}
-# data
-#personnel1 <- data.frame(salary = c("80-89K", "90-99K", "100-109K", "110-119K", "120-129K", "130-139K" , "140-149K" , ">=150K"), stringsAsFactors=FALSE)
-
-# Remove >, =, - signs
-#temp <- gsub("[>=-]","", personnel1$salary)
-
-# get average over range
-#personnel1$ave.salary <- sapply(strsplit(temp , "-") , function(i) mean(as.numeric(i)))
-
-#personnel1
-```
 
 
